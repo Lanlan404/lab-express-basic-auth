@@ -29,9 +29,32 @@ router.get("/login", (req, res, next) => {
 });
 
 router.post("/login", (req, res, next) => {
-  const hiddenpass = bcryptjs.hashSync(req.body.password);
+  console.log("SESSION:", req.session);
+  /*const hiddenpass = bcryptjs.hashSync(req.body.password);*/
+  const password = req.body.password;
   const email = req.body.email;
-  User.findOne({ email }).then().catch();
+  if (email === "" || password === "") {
+    res.render("login", {
+      errorMessage: "Please enter value for both Email & Password",
+    });
+    return;
+  }
+  User.findOne({ email })
+    .then((user) => {
+      if (!user) {
+        res.render("login", { errorMessage: "Email not found please Signup" });
+        return;
+      } else if (bcryptjs.compareSync(password, user.password)) {
+        req.session.currentUser = user;
+        res.render("index", { user: req.session.currentUser });
+      } else {
+        res.render("login", { errorMessage: "incorrect password" });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      next(err);
+    });
 });
 
 module.exports = router;
